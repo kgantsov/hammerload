@@ -61,4 +61,23 @@ impl Metrics {
     pub async fn histogram(&self) -> Histogram<u64> {
         self.hist.lock().await.clone()
     }
+
+    pub fn format_micros(&self, us: u64) -> String {
+        const MICROS_PER_MS: u64 = 1_000;
+        const MICROS_PER_SEC: u64 = 1_000_000;
+        const MICROS_PER_MIN: u64 = 60 * MICROS_PER_SEC;
+        const MICROS_PER_HOUR: u64 = 60 * MICROS_PER_MIN;
+
+        if us < MICROS_PER_MS {
+            format!("{}µs", us)
+        } else if us < MICROS_PER_SEC {
+            format!("{}ms", us / MICROS_PER_MS)
+        } else if us < MICROS_PER_MIN {
+            format!("{}s", us / MICROS_PER_SEC)
+        } else if us < MICROS_PER_HOUR {
+            format!("{}m", us / MICROS_PER_MIN)
+        } else {
+            format!("{}h", us / MICROS_PER_HOUR)
+        }
+    }
 }
