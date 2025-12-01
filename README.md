@@ -1,51 +1,49 @@
-use std::sync::Arc;
+# Hammerload - HTTP benchmarking tool
+### A fast, minimal, Rust-powered HTTP benchmarking tool.
 
-use clap::{Parser, ValueEnum};
-use hammerload::{metrics::metrics::Metrics, scheduler::scheduler::Scheduler};
+hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP services.
+It supports configurable concurrency and time-based test duration—making it ideal for quickly profiling APIs, microservices, and web backends.
 
-#[derive(ValueEnum, Debug, Clone)]
-enum Protocol {
-    Http,
-}
+## Installation
 
-#[derive(Parser, Debug)]
-#[command(
-    author = "Your Name",
-    version = "1.0.0",
-    about = "Hammerload - A load testing tool for HTTP protocols"
-)]
-struct Args {
-    #[arg(value_name = "PROTOCOL")]
-    protocol: Protocol,
+### Build from source:
 
-    #[arg(short, long, value_name = "URL")]
-    url: String,
+```bash
+git clone https://github.com/kgantsov/hammerload.git
+cd hammerload
+cargo build --release
+```
 
-    #[arg(short, long, value_name = "CONCURRENCY", default_value_t = 1)]
-    concurrency: u64,
+## Usage
 
-    #[arg(short, long, value_name = "DURATION", default_value_t = 10)]
-    duration: u64,
-}
+```bash
+hammerload <PROTOCOL> --url <URL> [OPTIONS]
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let logo = r#"
+```
+
+## Examples
+
+Benchmark an HTTP service for 10 seconds with 1 worker
+```bash
+hammerload http -url http://localhost:8000/files/1
+```
+
+Benchmark an HTTP service for 30 seconds with 200 workers
+
+```bash
+hammerload http -url http://localhost:8000/files/1 --duration 30 --concurrency 200
+
     ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
     ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
     ███████║███████║██╔████╔██║██╔████╔██║█████╗  ██████╔╝██║     ██║   ██║███████║██║  ██║
     ██╔══██║██╔══██║██║╚██╔╝██║██║╚██╔╝██║██╔══╝  ██╔══██╗██║     ██║   ██║██╔══██║██║  ██║
     ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
-    "#;
-    println!("{}", logo);
-
-    let args = Args::parse();
-
-    let metrics = Arc::new(Metrics::new());
-    let scheduler = Scheduler::new(&metrics, args.url, args.concurrency, args.duration);
-
-    scheduler.run().await;
-
-    Ok(())
-}
+    
+Requests per second: 33010.18370607029
+Successful requests: 330630
+Failed requests: 0
+50th percentile: 3509
+95th percentile: 18063
+99th percentile: 33535
+```
