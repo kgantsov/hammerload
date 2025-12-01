@@ -40,10 +40,10 @@ hammerload http -url http://localhost:8000/files/1 --duration 30 --concurrency 2
     ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
     
-Requests per second: 33010.18370607029
-Successful requests: 330630
+Requests per second: 33638.40847745677
+Successful requests: 336485
 Failed requests: 0
-50th percentile: 3509
-95th percentile: 18063
-99th percentile: 33535
+50th percentile: 3ms
+95th percentile: 17ms
+99th percentile: 33ms
 ```

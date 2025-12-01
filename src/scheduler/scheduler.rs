@@ -53,15 +53,15 @@ impl<'a> Scheduler<'a> {
 
         println!(
             "50th percentile: {}",
-            self.metrics.histogram().await.value_at_quantile(0.50)
+            format_micros(self.metrics.histogram().await.value_at_quantile(0.50))
         );
         println!(
             "95th percentile: {}",
-            self.metrics.histogram().await.value_at_quantile(0.95)
+            format_micros(self.metrics.histogram().await.value_at_quantile(0.95))
         );
         println!(
             "99th percentile: {}",
-            self.metrics.histogram().await.value_at_quantile(0.99)
+            format_micros(self.metrics.histogram().await.value_at_quantile(0.99))
         );
     }
 
@@ -113,5 +113,24 @@ impl<'a> Scheduler<'a> {
                 metrics.increment_failed_requests().await;
             }
         };
+    }
+}
+
+fn format_micros(us: u64) -> String {
+    const MICROS_PER_MS: u64 = 1_000;
+    const MICROS_PER_SEC: u64 = 1_000_000;
+    const MICROS_PER_MIN: u64 = 60 * MICROS_PER_SEC;
+    const MICROS_PER_HOUR: u64 = 60 * MICROS_PER_MIN;
+
+    if us < MICROS_PER_MS {
+        format!("{}µs", us)
+    } else if us < MICROS_PER_SEC {
+        format!("{}ms", us / MICROS_PER_MS)
+    } else if us < MICROS_PER_MIN {
+        format!("{}s", us / MICROS_PER_SEC)
+    } else if us < MICROS_PER_HOUR {
+        format!("{}m", us / MICROS_PER_MIN)
+    } else {
+        format!("{}h", us / MICROS_PER_HOUR)
     }
 }
