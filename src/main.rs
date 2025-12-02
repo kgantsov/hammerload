@@ -19,7 +19,7 @@ struct Args {
     #[arg(value_name = "PROTOCOL")]
     protocol: Protocol,
 
-    #[arg(short, long, value_name = "METHOD", default_value = "GET")]
+    #[arg(short = 'X', long, value_name = "METHOD", default_value = "GET")]
     method: Method,
 
     #[arg(short, long, value_name = "URL")]
