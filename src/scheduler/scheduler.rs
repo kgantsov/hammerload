@@ -8,6 +8,7 @@ pub struct Scheduler<'a> {
     metrics: &'a Arc<Metrics>,
     method: Method,
     url: String,
+    body: Option<String>,
     concurrency: u64,
     duration: u64,
     headers: HeaderMap,
@@ -18,6 +19,7 @@ impl<'a> Scheduler<'a> {
         metrics: &'a Arc<Metrics>,
         method: Method,
         url: String,
+        body: Option<String>,
         concurrency: u64,
         duration: u64,
         headers: HeaderMap,
@@ -26,6 +28,7 @@ impl<'a> Scheduler<'a> {
             metrics,
             method,
             url,
+            body,
             concurrency,
             duration,
             headers,
@@ -42,12 +45,14 @@ impl<'a> Scheduler<'a> {
         for _ in 0..self.concurrency {
             let method = self.method.clone();
             let url = url.clone();
+            let body = self.body.clone();
             let headers = headers.clone();
             let duration = self.duration;
             let metrics = Arc::clone(self.metrics);
 
             tasks.push(tokio::spawn(async move {
-                Scheduler::run_client(&metrics, start_bench, method, url, duration, headers).await;
+                Scheduler::run_client(&metrics, start_bench, method, url, body, duration, headers)
+                    .await;
             }));
         }
 
@@ -87,13 +92,14 @@ impl<'a> Scheduler<'a> {
         start_bench: std::time::Instant,
         method: Method,
         url: String,
+        body: Option<String>,
         duration: u64,
         headers: HeaderMap,
     ) {
         let client = Client::builder().default_headers(headers).build().unwrap();
 
         loop {
-            let result = Self::make_request(metrics, &client, &method, &url).await;
+            let result = Self::make_request(metrics, &client, &method, &url, &body).await;
             Self::handle_request_result(metrics, result).await;
 
             if std::time::Instant::now() >= start_bench + std::time::Duration::from_secs(duration) {
@@ -107,10 +113,17 @@ impl<'a> Scheduler<'a> {
         client: &Client,
         method: &Method,
         url: &str,
+        body: &Option<String>,
     ) -> Result<String, reqwest::Error> {
         let start = std::time::Instant::now();
 
-        let resp = client.request(method.clone(), url).send().await?;
+        let req_builder = client.request(method.clone(), url);
+        let req_builder = match body {
+            Some(b) => req_builder.body(b.clone()),
+            None => req_builder,
+        };
+
+        let resp = req_builder.send().await?;
         let _status = resp.status();
         let body = resp.text().await?;
 

@@ -25,6 +25,9 @@ struct Args {
     #[arg(short, long, value_name = "URL")]
     url: String,
 
+    #[arg(short, long, value_name = "BODY")]
+    body: Option<String>,
+
     #[arg(short, long, value_name = "CONCURRENCY", default_value_t = 1)]
     concurrency: u64,
 
@@ -75,6 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         &metrics,
         args.method,
         args.url,
+        args.body,
         args.concurrency,
         args.duration,
         header_map,
