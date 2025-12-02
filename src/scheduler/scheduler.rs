@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use reqwest::Client;
+use reqwest::{header::HeaderMap, Client};
 
 use crate::metrics::metrics::Metrics;
 
@@ -9,15 +9,23 @@ pub struct Scheduler<'a> {
     url: String,
     concurrency: u64,
     duration: u64,
+    headers: HeaderMap,
 }
 
 impl<'a> Scheduler<'a> {
-    pub fn new(metrics: &'a Arc<Metrics>, url: String, concurrency: u64, duration: u64) -> Self {
+    pub fn new(
+        metrics: &'a Arc<Metrics>,
+        url: String,
+        concurrency: u64,
+        duration: u64,
+        headers: HeaderMap,
+    ) -> Self {
         Scheduler {
             metrics,
             url,
             concurrency,
             duration,
+            headers,
         }
     }
 
@@ -26,14 +34,16 @@ impl<'a> Scheduler<'a> {
         let mut tasks = Vec::new();
 
         let url = self.url.clone();
+        let headers = self.headers.clone();
 
         for _ in 0..self.concurrency {
             let url = url.clone();
+            let headers = headers.clone();
             let duration = self.duration;
             let metrics = Arc::clone(self.metrics);
 
             tasks.push(tokio::spawn(async move {
-                Scheduler::run_client(&metrics, start_bench, url, duration).await;
+                Scheduler::run_client(&metrics, start_bench, url, duration, headers).await;
             }));
         }
 
@@ -69,12 +79,13 @@ impl<'a> Scheduler<'a> {
     }
 
     async fn run_client(
-        metrics: &Arc<Metrics>,
+        metrics: &'a Arc<Metrics>,
         start_bench: std::time::Instant,
         url: String,
         duration: u64,
+        headers: HeaderMap,
     ) {
-        let client = Client::new();
+        let client = Client::builder().default_headers(headers).build().unwrap();
 
         loop {
             let result = Self::make_request(metrics, &client, &url).await;
