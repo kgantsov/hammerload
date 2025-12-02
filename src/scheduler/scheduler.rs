@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use reqwest::{header::HeaderMap, Client, Method};
 
@@ -9,6 +9,7 @@ pub struct Scheduler<'a> {
     method: Method,
     url: String,
     body: Option<String>,
+    form_params: HashMap<String, String>,
     concurrency: u64,
     duration: u64,
     headers: HeaderMap,
@@ -20,15 +21,17 @@ impl<'a> Scheduler<'a> {
         method: Method,
         url: String,
         body: Option<String>,
+        form_params: HashMap<String, String>,
+        headers: HeaderMap,
         concurrency: u64,
         duration: u64,
-        headers: HeaderMap,
     ) -> Self {
         Scheduler {
             metrics,
             method,
             url,
             body,
+            form_params,
             concurrency,
             duration,
             headers,
@@ -46,13 +49,23 @@ impl<'a> Scheduler<'a> {
             let method = self.method.clone();
             let url = url.clone();
             let body = self.body.clone();
+            let form_params = self.form_params.clone();
             let headers = headers.clone();
             let duration = self.duration;
             let metrics = Arc::clone(self.metrics);
 
             tasks.push(tokio::spawn(async move {
-                Scheduler::run_client(&metrics, start_bench, method, url, body, duration, headers)
-                    .await;
+                Scheduler::run_client(
+                    &metrics,
+                    start_bench,
+                    method,
+                    url,
+                    body,
+                    form_params,
+                    duration,
+                    headers,
+                )
+                .await;
             }));
         }
 
@@ -93,13 +106,15 @@ impl<'a> Scheduler<'a> {
         method: Method,
         url: String,
         body: Option<String>,
+        form_params: HashMap<String, String>,
         duration: u64,
         headers: HeaderMap,
     ) {
         let client = Client::builder().default_headers(headers).build().unwrap();
 
         loop {
-            let result = Self::make_request(metrics, &client, &method, &url, &body).await;
+            let result =
+                Self::make_request(metrics, &client, &method, &url, &body, &form_params).await;
             Self::handle_request_result(metrics, result).await;
 
             if std::time::Instant::now() >= start_bench + std::time::Duration::from_secs(duration) {
@@ -114,10 +129,16 @@ impl<'a> Scheduler<'a> {
         method: &Method,
         url: &str,
         body: &Option<String>,
+        form_params: &HashMap<String, String>,
     ) -> Result<String, reqwest::Error> {
         let start = std::time::Instant::now();
 
         let req_builder = client.request(method.clone(), url);
+        let req_builder = if form_params.len() > 0 {
+            req_builder.form(form_params)
+        } else {
+            req_builder
+        };
         let req_builder = match body {
             Some(b) => req_builder.body(b.clone()),
             None => req_builder,

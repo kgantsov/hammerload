@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use clap::{Parser, ValueEnum};
@@ -36,6 +37,9 @@ struct Args {
 
     #[arg(short = 'H', long = "header")]
     headers: Vec<String>,
+
+    #[arg(short = 'F', long = "form")]
+    form_params: Vec<String>,
 }
 
 #[tokio::main]
@@ -54,6 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let metrics = Arc::new(Metrics::new());
 
+    let mut form_params = HashMap::new();
     let mut header_map = reqwest::header::HeaderMap::new();
 
     for h in &args.headers {
@@ -73,15 +78,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
         }
     }
+    for h in &args.form_params {
+        match h.split_once('=') {
+            Some((key, value)) => {
+                form_params.insert(key.trim().to_string(), value.trim().to_string());
+            }
+            None => {
+                eprintln!("Invalid form parameter: {}", h);
+            }
+        }
+    }
 
     let scheduler = Scheduler::new(
         &metrics,
         args.method,
         args.url,
         args.body,
+        form_params,
+        header_map,
         args.concurrency,
         args.duration,
-        header_map,
     );
 
     scheduler.run().await;
