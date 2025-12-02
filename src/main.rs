@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use clap::{Parser, ValueEnum};
 use hammerload::{metrics::metrics::Metrics, scheduler::scheduler::Scheduler};
+use reqwest::Method;
 
 #[derive(ValueEnum, Debug, Clone)]
 enum Protocol {
@@ -17,6 +18,9 @@ enum Protocol {
 struct Args {
     #[arg(value_name = "PROTOCOL")]
     protocol: Protocol,
+
+    #[arg(short, long, value_name = "METHOD", default_value = "GET")]
+    method: Method,
 
     #[arg(short, long, value_name = "URL")]
     url: String,
@@ -69,6 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let scheduler = Scheduler::new(
         &metrics,
+        args.method,
         args.url,
         args.concurrency,
         args.duration,

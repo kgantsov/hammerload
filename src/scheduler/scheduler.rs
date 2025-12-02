@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use reqwest::{header::HeaderMap, Client};
+use reqwest::{header::HeaderMap, Client, Method};
 
 use crate::metrics::metrics::Metrics;
 
 pub struct Scheduler<'a> {
     metrics: &'a Arc<Metrics>,
+    method: Method,
     url: String,
     concurrency: u64,
     duration: u64,
@@ -15,6 +16,7 @@ pub struct Scheduler<'a> {
 impl<'a> Scheduler<'a> {
     pub fn new(
         metrics: &'a Arc<Metrics>,
+        method: Method,
         url: String,
         concurrency: u64,
         duration: u64,
@@ -22,6 +24,7 @@ impl<'a> Scheduler<'a> {
     ) -> Self {
         Scheduler {
             metrics,
+            method,
             url,
             concurrency,
             duration,
@@ -37,13 +40,14 @@ impl<'a> Scheduler<'a> {
         let headers = self.headers.clone();
 
         for _ in 0..self.concurrency {
+            let method = self.method.clone();
             let url = url.clone();
             let headers = headers.clone();
             let duration = self.duration;
             let metrics = Arc::clone(self.metrics);
 
             tasks.push(tokio::spawn(async move {
-                Scheduler::run_client(&metrics, start_bench, url, duration, headers).await;
+                Scheduler::run_client(&metrics, start_bench, method, url, duration, headers).await;
             }));
         }
 
@@ -81,6 +85,7 @@ impl<'a> Scheduler<'a> {
     async fn run_client(
         metrics: &'a Arc<Metrics>,
         start_bench: std::time::Instant,
+        method: Method,
         url: String,
         duration: u64,
         headers: HeaderMap,
@@ -88,7 +93,7 @@ impl<'a> Scheduler<'a> {
         let client = Client::builder().default_headers(headers).build().unwrap();
 
         loop {
-            let result = Self::make_request(metrics, &client, &url).await;
+            let result = Self::make_request(metrics, &client, &method, &url).await;
             Self::handle_request_result(metrics, result).await;
 
             if std::time::Instant::now() >= start_bench + std::time::Duration::from_secs(duration) {
@@ -100,11 +105,12 @@ impl<'a> Scheduler<'a> {
     async fn make_request(
         metrics: &Arc<Metrics>,
         client: &Client,
+        method: &Method,
         url: &str,
     ) -> Result<String, reqwest::Error> {
         let start = std::time::Instant::now();
 
-        let resp = client.get(url).send().await?;
+        let resp = client.request(method.clone(), url).send().await?;
         let _status = resp.status();
         let body = resp.text().await?;
 
