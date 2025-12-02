@@ -40,6 +40,10 @@ struct Args {
 
     #[arg(short = 'F', long = "form")]
     form_params: Vec<String>,
+
+    // timeout
+    #[arg(short, long, value_name = "TIMEOUT", default_value_t = 5)]
+    timeout: u64,
 }
 
 #[tokio::main]
@@ -98,6 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         header_map,
         args.concurrency,
         args.duration,
+        args.timeout,
     );
 
     scheduler.run().await;

@@ -1,6 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use reqwest::{header::HeaderMap, Client, Method};
+use tokio::time;
 
 use crate::metrics::metrics::Metrics;
 
@@ -10,9 +11,10 @@ pub struct Scheduler<'a> {
     url: String,
     body: Option<String>,
     form_params: HashMap<String, String>,
+    headers: HeaderMap,
     concurrency: u64,
     duration: u64,
-    headers: HeaderMap,
+    timeout: u64,
 }
 
 impl<'a> Scheduler<'a> {
@@ -25,6 +27,7 @@ impl<'a> Scheduler<'a> {
         headers: HeaderMap,
         concurrency: u64,
         duration: u64,
+        timeout: u64,
     ) -> Self {
         Scheduler {
             metrics,
@@ -32,9 +35,10 @@ impl<'a> Scheduler<'a> {
             url,
             body,
             form_params,
+            headers,
             concurrency,
             duration,
-            headers,
+            timeout,
         }
     }
 
@@ -52,6 +56,7 @@ impl<'a> Scheduler<'a> {
             let form_params = self.form_params.clone();
             let headers = headers.clone();
             let duration = self.duration;
+            let timeout = self.timeout;
             let metrics = Arc::clone(self.metrics);
 
             tasks.push(tokio::spawn(async move {
@@ -62,8 +67,9 @@ impl<'a> Scheduler<'a> {
                     url,
                     body,
                     form_params,
-                    duration,
                     headers,
+                    duration,
+                    timeout,
                 )
                 .await;
             }));
@@ -107,10 +113,15 @@ impl<'a> Scheduler<'a> {
         url: String,
         body: Option<String>,
         form_params: HashMap<String, String>,
-        duration: u64,
         headers: HeaderMap,
+        duration: u64,
+        timeout: u64,
     ) {
-        let client = Client::builder().default_headers(headers).build().unwrap();
+        let client = Client::builder()
+            .default_headers(headers)
+            .timeout(Duration::from_secs(timeout))
+            .build()
+            .unwrap();
 
         loop {
             let result =
