@@ -20,9 +20,18 @@ cargo build --release
 hammerload <PROTOCOL> --url <URL> [OPTIONS]
 ```
 
+Core load parameters
+```
+-d, --duration <SECONDS>           Duration of test in seconds
+-c, --concurrency <N>              Number of concurrent connections
+-r, --rate <N>                     Requests per second
+-t, --timeout <SECONDS>            Timeout in seconds
+```
+
 Request options
 ```
--X, --method <METHOD>              HTTP method (GET, POST…)
+-u, --url <URL>                    URL to send requests to
+-X, --method <METHOD>              HTTP method (GET, POST, PUT, PATCH, DELETE, ...)
 -H, --header <HEADER>              Custom headers (repeatable)
 -b, --body <STRING>                Request body
 -F, --form <KEY=VALUE>             Form fields (repeatable)

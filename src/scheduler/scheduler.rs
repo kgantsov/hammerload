@@ -13,6 +13,7 @@ pub struct Scheduler<'a> {
     headers: HeaderMap,
     concurrency: u64,
     duration: u64,
+    rate: Option<u64>,
     timeout: u64,
 }
 
@@ -26,6 +27,7 @@ impl<'a> Scheduler<'a> {
         headers: HeaderMap,
         concurrency: u64,
         duration: u64,
+        rate: Option<u64>,
         timeout: u64,
     ) -> Self {
         Scheduler {
@@ -37,6 +39,7 @@ impl<'a> Scheduler<'a> {
             headers,
             concurrency,
             duration,
+            rate,
             timeout,
         }
     }
@@ -54,7 +57,9 @@ impl<'a> Scheduler<'a> {
             let body = self.body.clone();
             let form_params = self.form_params.clone();
             let headers = headers.clone();
+            let concurrency = self.concurrency;
             let duration = self.duration;
+            let rate = self.rate;
             let timeout = self.timeout;
             let metrics = Arc::clone(self.metrics);
 
@@ -67,7 +72,9 @@ impl<'a> Scheduler<'a> {
                     body,
                     form_params,
                     headers,
+                    concurrency,
                     duration,
+                    rate,
                     timeout,
                 )
                 .await;
@@ -113,7 +120,9 @@ impl<'a> Scheduler<'a> {
         body: Option<String>,
         form_params: HashMap<String, String>,
         headers: HeaderMap,
+        concurrency: u64,
         duration: u64,
+        rate: Option<u64>,
         timeout: u64,
     ) {
         let client = Client::builder()
@@ -122,13 +131,28 @@ impl<'a> Scheduler<'a> {
             .build()
             .unwrap();
 
+        let interval = rate.map(|rps| {
+            let per_worker = (rps as f64) / (concurrency as f64);
+            Duration::from_secs_f64(1.0 / per_worker)
+        });
+
         loop {
+            let loop_start = std::time::Instant::now();
+
             let result =
                 Self::make_request(metrics, &client, &method, &url, &body, &form_params).await;
             Self::handle_request_result(metrics, result).await;
 
             if std::time::Instant::now() >= start_bench + std::time::Duration::from_secs(duration) {
                 break;
+            }
+
+            // Enforce rate limiting
+            if let Some(interval) = interval {
+                let elapsed = loop_start.elapsed();
+                if elapsed < interval {
+                    tokio::time::sleep(interval - elapsed).await;
+                }
             }
         }
     }

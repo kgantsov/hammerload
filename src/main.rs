@@ -13,36 +13,68 @@ enum Protocol {
 #[derive(Parser, Debug)]
 #[command(
     author = "Your Name",
-    version = "1.0.0",
+    version = "0.3.0",
     about = "Hammerload - A load testing tool for HTTP protocols"
 )]
 struct Args {
     #[arg(value_name = "PROTOCOL")]
     protocol: Protocol,
 
-    #[arg(short = 'X', long, value_name = "METHOD", default_value = "GET")]
+    #[arg(
+        short = 'X',
+        long,
+        value_name = "METHOD",
+        default_value = "GET",
+        help = "HTTP method (GET, POST, PUT, PATCH, DELETE, ...)"
+    )]
     method: Method,
 
-    #[arg(short, long, value_name = "URL")]
+    #[arg(short, long, value_name = "URL", help = "URL to send requests to")]
     url: String,
 
-    #[arg(short, long, value_name = "BODY")]
+    #[arg(short, long, value_name = "BODY", help = "Request body")]
     body: Option<String>,
 
-    #[arg(short, long, value_name = "CONCURRENCY", default_value_t = 1)]
-    concurrency: u64,
-
-    #[arg(short, long, value_name = "DURATION", default_value_t = 10)]
-    duration: u64,
-
-    #[arg(short = 'H', long = "header")]
+    #[arg(short = 'H', long = "header", help = "Request header (repeatable)")]
     headers: Vec<String>,
 
-    #[arg(short = 'F', long = "form")]
+    #[arg(short = 'F', long = "form", help = "Form parameters (repeatable)")]
     form_params: Vec<String>,
 
+    #[arg(
+        short,
+        long,
+        value_name = "CONCURRENCY",
+        default_value_t = 1,
+        help = "Number of concurrent connections"
+    )]
+    concurrency: u64,
+
+    #[arg(
+        short,
+        long,
+        value_name = "DURATION",
+        default_value_t = 10,
+        help = "Duration of test in seconds"
+    )]
+    duration: u64,
+
+    #[arg(
+        short,
+        long,
+        value_name = "RATE",
+        help = "Number of requests per second"
+    )]
+    rate: Option<u64>,
+
     // timeout
-    #[arg(short, long, value_name = "TIMEOUT", default_value_t = 5)]
+    #[arg(
+        short,
+        long,
+        value_name = "TIMEOUT",
+        default_value_t = 5,
+        help = "Request timeout in seconds"
+    )]
     timeout: u64,
 }
 
@@ -102,6 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         header_map,
         args.concurrency,
         args.duration,
+        args.rate,
         args.timeout,
     );
 
