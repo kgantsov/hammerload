@@ -109,7 +109,7 @@ impl<'a> Scheduler<'a> {
             self.metrics
                 .human_readable_bytes(self.metrics.throughput_received(start_bench).await)
         );
-        println!("Latencies: ");
+        println!("Latencies:");
         println!(
             "   50th percentile: {}",
             self.metrics

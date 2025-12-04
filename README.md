@@ -62,7 +62,7 @@ hammerload http -X POST -u http://localhost:8000/files/ --duration 1 --concurren
 Benchmark an HTTP service for 30 seconds with 200 workers
 
 ```bash
-hammerload http -url http://localhost:8000/files/1 --duration 30 --concurrency 200
+hammerload http -u http://localhost:8000/files/1 --duration 10 --concurrency 100
 
     ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
     ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
@@ -71,10 +71,13 @@ hammerload http -url http://localhost:8000/files/1 --duration 30 --concurrency 2
     ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
     
-Requests per second: 33638.40847745677
-Successful requests: 336485
-Failed requests: 0
-50th percentile: 3ms
-95th percentile: 17ms
-99th percentile: 33ms
+Requests: 335348 33507.99/s
+Requests succeded: 335348
+Requests failed: 0
+Data sent: 0 B 0 B/s
+Data received: 87.31 MB 8.72 MB/s
+Latencies:
+   50th percentile: 1ms
+   95th percentile: 9ms
+   99th percentile: 16ms
 ```
