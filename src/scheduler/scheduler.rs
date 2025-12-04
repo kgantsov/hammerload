@@ -147,12 +147,25 @@ impl<'a> Scheduler<'a> {
             Duration::from_secs_f64(1.0 / per_worker)
         });
 
+        let body_clonned = body.clone();
+        let form_params_clonned = form_params.clone();
+
+        let mut request_size: u64 = 0;
+        if let Some(b) = body_clonned {
+            request_size += b.len() as u64;
+        }
+        for (key, value) in form_params_clonned {
+            request_size += key.len() as u64 + value.len() as u64;
+        }
+
         loop {
             let loop_start = std::time::Instant::now();
 
             let result =
                 Self::make_request(metrics, &client, &method, &url, &body, &form_params).await;
             Self::handle_request_result(metrics, result).await;
+
+            metrics.add_bytes_sent(request_size).await;
 
             if std::time::Instant::now() >= start_bench + std::time::Duration::from_secs(duration) {
                 break;
@@ -178,14 +191,6 @@ impl<'a> Scheduler<'a> {
     ) -> Result<(), reqwest::Error> {
         let start = std::time::Instant::now();
 
-        let mut request_size: u64 = 0;
-        if let Some(b) = body {
-            request_size += b.len() as u64;
-        }
-        for (key, value) in form_params {
-            request_size += key.len() as u64 + value.len() as u64;
-        }
-
         let req_builder = client.request(method.clone(), url);
         let req_builder = if form_params.len() > 0 {
             req_builder.form(form_params)
@@ -202,7 +207,6 @@ impl<'a> Scheduler<'a> {
         let body = resp.bytes().await?;
 
         let response_size = body.len() as u64;
-        metrics.add_bytes_sent(request_size).await;
         metrics.add_bytes_received(response_size).await;
 
         let req_duration = start.elapsed();
