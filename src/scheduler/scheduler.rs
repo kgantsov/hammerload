@@ -111,24 +111,42 @@ impl<'a> Scheduler<'a> {
         );
         println!("Latencies:");
         println!(
-            "   50th percentile: {}",
+            "   Min:      {}",
+            self.metrics.format_micros(self.metrics.min_latency().await)
+        );
+        println!(
+            "   P(50):    {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.50))
         );
         println!(
-            "   90th percentile: {}",
+            "   P(90):    {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.90))
         );
         println!(
-            "   95th percentile: {}",
+            "   P(95):    {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.95))
         );
         println!(
-            "   99th percentile: {}",
+            "   P(99):    {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.99))
+        );
+        println!(
+            "   P(99.9):  {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.999))
+        );
+        println!(
+            "   P(99.99): {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.9999))
+        );
+        println!(
+            "   Max:      {}",
+            self.metrics.format_micros(self.metrics.max_latency().await)
         );
     }
 

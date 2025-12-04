@@ -7,6 +7,8 @@ use tokio::sync::Mutex;
 
 pub struct Metrics {
     hist: Arc<Mutex<Histogram<u64>>>,
+    min_latency: AtomicU64,
+    max_latency: AtomicU64,
     bytes_sent: AtomicU64,
     bytes_received: AtomicU64,
     total_requests: AtomicU64,
@@ -19,6 +21,8 @@ impl Metrics {
         let hist = Histogram::<u64>::new(3).unwrap();
         Self {
             hist: Arc::new(Mutex::new(hist)),
+            min_latency: AtomicU64::new(u64::MAX),
+            max_latency: AtomicU64::new(0),
             bytes_sent: AtomicU64::new(0),
             bytes_received: AtomicU64::new(0),
             total_requests: AtomicU64::new(0),
@@ -88,10 +92,27 @@ impl Metrics {
     pub async fn record_latency(&self, latency: u64) {
         let mut hist = self.hist.lock().await;
         hist.record(latency).unwrap();
+
+        self.min_latency.store(
+            latency.min(self.min_latency.load(Ordering::Relaxed)),
+            Ordering::Relaxed,
+        );
+        self.max_latency.store(
+            latency.max(self.max_latency.load(Ordering::Relaxed)),
+            Ordering::Relaxed,
+        );
     }
 
     pub async fn histogram(&self) -> Histogram<u64> {
         self.hist.lock().await.clone()
+    }
+
+    pub async fn min_latency(&self) -> u64 {
+        self.min_latency.load(Ordering::Relaxed)
+    }
+
+    pub async fn max_latency(&self) -> u64 {
+        self.max_latency.load(Ordering::Relaxed)
     }
 
     pub fn format_micros(&self, us: u64) -> String {
