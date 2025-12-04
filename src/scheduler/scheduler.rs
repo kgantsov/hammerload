@@ -208,27 +208,27 @@ impl<'a> Scheduler<'a> {
         let fail_rate = failed_requests as f64 / total_requests as f64 * 100.0;
 
         println!(
-            "Requests:......................{}   {:.2}/s",
+            "Requests:......................{:<10} {:>10.2}/s",
             total_requests,
             self.metrics.rps(start_bench).await
         );
         println!(
-            "Requests succeded:.............{}   {:.2}%",
+            "Requests succeded:.............{:<10}  {:>10.2}%",
             successful_requests, success_rate
         );
         println!(
-            "Requests failed:...............{}   {:.2}%",
+            "Requests failed:...............{:<10}  {:>10.2}%",
             failed_requests, fail_rate
         );
         println!(
-            "Data sent:.....................{}   {}/s",
+            "Data sent:.....................{:<10} {:>10}/s",
             self.metrics
                 .human_readable_bytes(self.metrics.bytes_sent().await as f64),
             self.metrics
                 .human_readable_bytes(self.metrics.throughput_sent(start_bench).await)
         );
         println!(
-            "Data received:.................{}   {}/s",
+            "Data received:.................{:<10} {:>10}/s",
             self.metrics
                 .human_readable_bytes(self.metrics.bytes_received().await as f64),
             self.metrics
