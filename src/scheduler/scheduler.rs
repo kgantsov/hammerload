@@ -85,69 +85,7 @@ impl<'a> Scheduler<'a> {
             task.await.unwrap();
         }
 
-        println!(
-            "Requests: {} {:.2}/s",
-            self.metrics.total_requests().await,
-            self.metrics.rps(start_bench).await
-        );
-        println!(
-            "Requests succeded: {}",
-            self.metrics.successful_requests().await
-        );
-        println!("Requests failed: {}", self.metrics.failed_requests().await);
-        println!(
-            "Data sent: {} {}/s",
-            self.metrics
-                .human_readable_bytes(self.metrics.bytes_sent().await as f64),
-            self.metrics
-                .human_readable_bytes(self.metrics.throughput_sent(start_bench).await)
-        );
-        println!(
-            "Data received: {} {}/s",
-            self.metrics
-                .human_readable_bytes(self.metrics.bytes_received().await as f64),
-            self.metrics
-                .human_readable_bytes(self.metrics.throughput_received(start_bench).await)
-        );
-        println!("Latencies:");
-        println!(
-            "   Min:      {}",
-            self.metrics.format_micros(self.metrics.min_latency().await)
-        );
-        println!(
-            "   P(50):    {}",
-            self.metrics
-                .format_micros(self.metrics.histogram().await.value_at_quantile(0.50))
-        );
-        println!(
-            "   P(90):    {}",
-            self.metrics
-                .format_micros(self.metrics.histogram().await.value_at_quantile(0.90))
-        );
-        println!(
-            "   P(95):    {}",
-            self.metrics
-                .format_micros(self.metrics.histogram().await.value_at_quantile(0.95))
-        );
-        println!(
-            "   P(99):    {}",
-            self.metrics
-                .format_micros(self.metrics.histogram().await.value_at_quantile(0.99))
-        );
-        println!(
-            "   P(99.9):  {}",
-            self.metrics
-                .format_micros(self.metrics.histogram().await.value_at_quantile(0.999))
-        );
-        println!(
-            "   P(99.99): {}",
-            self.metrics
-                .format_micros(self.metrics.histogram().await.value_at_quantile(0.9999))
-        );
-        println!(
-            "   Max:      {}",
-            self.metrics.format_micros(self.metrics.max_latency().await)
-        );
+        self.print_metrics(start_bench).await;
     }
 
     async fn run_client(
@@ -259,5 +197,71 @@ impl<'a> Scheduler<'a> {
                 metrics.increment_failed_requests().await;
             }
         };
+    }
+
+    async fn print_metrics(&self, start_bench: std::time::Instant) {
+        println!(
+            "Requests: {} {:.2}/s",
+            self.metrics.total_requests().await,
+            self.metrics.rps(start_bench).await
+        );
+        println!(
+            "Requests succeded: {}",
+            self.metrics.successful_requests().await
+        );
+        println!("Requests failed: {}", self.metrics.failed_requests().await);
+        println!(
+            "Data sent: {} {}/s",
+            self.metrics
+                .human_readable_bytes(self.metrics.bytes_sent().await as f64),
+            self.metrics
+                .human_readable_bytes(self.metrics.throughput_sent(start_bench).await)
+        );
+        println!(
+            "Data received: {} {}/s",
+            self.metrics
+                .human_readable_bytes(self.metrics.bytes_received().await as f64),
+            self.metrics
+                .human_readable_bytes(self.metrics.throughput_received(start_bench).await)
+        );
+        println!("Latencies:");
+        println!(
+            "   Min:      {}",
+            self.metrics.format_micros(self.metrics.min_latency().await)
+        );
+        println!(
+            "   P(50):    {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.50))
+        );
+        println!(
+            "   P(90):    {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.90))
+        );
+        println!(
+            "   P(95):    {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.95))
+        );
+        println!(
+            "   P(99):    {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.99))
+        );
+        println!(
+            "   P(99.9):  {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.999))
+        );
+        println!(
+            "   P(99.99): {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.9999))
+        );
+        println!(
+            "   Max:      {}",
+            self.metrics.format_micros(self.metrics.max_latency().await)
+        );
     }
 }
