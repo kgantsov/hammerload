@@ -85,7 +85,16 @@ impl<'a> Scheduler<'a> {
             task.await.unwrap();
         }
 
-        println!("Requests: {:.2}/s", self.metrics.rps(start_bench).await);
+        println!(
+            "Requests: {} {:.2}/s",
+            self.metrics.total_requests().await,
+            self.metrics.rps(start_bench).await
+        );
+        println!(
+            "Requests succeded: {}",
+            self.metrics.successful_requests().await
+        );
+        println!("Requests failed: {}", self.metrics.failed_requests().await);
         println!(
             "Data sent: {} {}/s",
             self.metrics
@@ -100,24 +109,19 @@ impl<'a> Scheduler<'a> {
             self.metrics
                 .human_readable_bytes(self.metrics.throughput_received(start_bench).await)
         );
+        println!("Latencies: ");
         println!(
-            "Successful requests: {}",
-            self.metrics.successful_requests().await
-        );
-        println!("Failed requests: {}", self.metrics.failed_requests().await);
-
-        println!(
-            "50th percentile: {}",
+            "   50th percentile: {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.50))
         );
         println!(
-            "95th percentile: {}",
+            "   95th percentile: {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.95))
         );
         println!(
-            "99th percentile: {}",
+            "   99th percentile: {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.99))
         );
