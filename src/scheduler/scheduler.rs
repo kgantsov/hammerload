@@ -58,15 +58,13 @@ impl<'a> Scheduler<'a> {
 
         if self.show_progress {
             let bar = ProgressBar::new(duration);
+            let bar = bar.with_message("Hammering");
             bar.set_style(
-                ProgressStyle::with_template(
-                    "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
-                )
-                .unwrap()
-                .progress_chars("##-"),
+                ProgressStyle::with_template("{msg} {bar:40.cyan/blue} [{elapsed_precise}]")
+                    .unwrap()
+                    .progress_chars("##-"),
             );
 
-            println!("Hammering ({}s)", duration);
             tasks.push(tokio::spawn(async move {
                 let mut seconds_left = duration;
                 let mut interval = tokio::time::interval(Duration::from_secs(1));
