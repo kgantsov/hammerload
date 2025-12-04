@@ -4,6 +4,32 @@
 hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP services.
 It supports configurable concurrency and time-based test duration—making it ideal for quickly profiling APIs, microservices, and web backends.
 
+```bash
+hammerload http -u http://localhost:8000/files/1 --duration 10 --concurrency 100
+
+    ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
+    ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
+    ███████║███████║██╔████╔██║██╔████╔██║█████╗  ██████╔╝██║     ██║   ██║███████║██║  ██║
+    ██╔══██║██╔══██║██║╚██╔╝██║██║╚██╔╝██║██╔══╝  ██╔══██╗██║     ██║   ██║██╔══██║██║  ██║
+    ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
+    ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
+    
+Requests:......................333303   33323.64/s
+Requests succeded:.............333303   100.00%
+Requests failed:...............0   0.00%
+Data sent:.....................0 B   0 B/s
+Data received:.................86.78 MB   8.68 MB/s
+Latencies:
+   Min:........................56µs
+   P(50):......................1ms
+   P(90):......................6ms
+   P(95):......................8ms
+   P(99):......................16ms
+   P(99.9):....................34ms
+   P(99.99):...................61ms
+   Max:........................74ms
+```
+
 ## Installation
 
 ### Build from source:
@@ -57,32 +83,4 @@ hammerload http -X POST -u http://localhost:8000/files/ --duration 1 --concurren
 Make POST request with form parameters
 ```bash
 hammerload http -X POST -u http://localhost:8000/files/ --duration 1 --concurrency 1 -F "filename=test.txt" -F "file_type=file" -F "checksum=checksum" -F "size=0"
-```
-
-Benchmark an HTTP service for 30 seconds with 200 workers
-
-```bash
-hammerload http -u http://localhost:8000/files/1 --duration 10 --concurrency 100
-
-    ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
-    ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
-    ███████║███████║██╔████╔██║██╔████╔██║█████╗  ██████╔╝██║     ██║   ██║███████║██║  ██║
-    ██╔══██║██╔══██║██║╚██╔╝██║██║╚██╔╝██║██╔══╝  ██╔══██╗██║     ██║   ██║██╔══██║██║  ██║
-    ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
-    ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
-    
-Requests:......................333303   33323.64/s
-Requests succeded:.............333303   100.00%
-Requests failed:...............0   0.00%
-Data sent:.....................0 B   0 B/s
-Data received:.................86.78 MB   8.68 MB/s
-Latencies:
-   Min:........................56µs
-   P(50):......................1ms
-   P(90):......................6ms
-   P(95):......................8ms
-   P(99):......................16ms
-   P(99.9):....................34ms
-   P(99.99):...................61ms
-   Max:........................74ms
 ```
