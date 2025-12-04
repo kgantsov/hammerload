@@ -1,14 +1,17 @@
 use hdrhistogram::Histogram;
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
+};
 use tokio::sync::Mutex;
 
 pub struct Metrics {
     hist: Arc<Mutex<Histogram<u64>>>,
-    bytes_sent: Arc<Mutex<u64>>,
-    bytes_received: Arc<Mutex<u64>>,
-    total_requests: Arc<Mutex<u64>>,
-    successful_requests: Arc<Mutex<u64>>,
-    failed_requests: Arc<Mutex<u64>>,
+    bytes_sent: AtomicU64,
+    bytes_received: AtomicU64,
+    total_requests: AtomicU64,
+    successful_requests: AtomicU64,
+    failed_requests: AtomicU64,
 }
 
 impl Metrics {
@@ -16,57 +19,52 @@ impl Metrics {
         let hist = Histogram::<u64>::new(3).unwrap();
         Self {
             hist: Arc::new(Mutex::new(hist)),
-            bytes_sent: Arc::new(Mutex::new(0)),
-            bytes_received: Arc::new(Mutex::new(0)),
-            total_requests: Arc::new(Mutex::new(0)),
-            successful_requests: Arc::new(Mutex::new(0)),
-            failed_requests: Arc::new(Mutex::new(0)),
+            bytes_sent: AtomicU64::new(0),
+            bytes_received: AtomicU64::new(0),
+            total_requests: AtomicU64::new(0),
+            successful_requests: AtomicU64::new(0),
+            failed_requests: AtomicU64::new(0),
         }
     }
 
     pub async fn increment_total_requests(&self) {
-        let mut tr = self.total_requests.lock().await;
-        *tr += 1;
+        self.total_requests.fetch_add(1, Ordering::Relaxed);
     }
 
     pub async fn increment_successful_requests(&self) {
-        let mut sr = self.successful_requests.lock().await;
-        *sr += 1;
+        self.successful_requests.fetch_add(1, Ordering::Relaxed);
     }
 
     pub async fn increment_failed_requests(&self) {
-        let mut fr = self.failed_requests.lock().await;
-        *fr += 1;
+        self.failed_requests.fetch_add(1, Ordering::Relaxed);
     }
 
     pub async fn add_bytes_sent(&self, bytes: u64) {
-        let mut bt = self.bytes_sent.lock().await;
-        *bt += bytes;
+        self.bytes_sent.fetch_add(bytes, Ordering::Relaxed);
     }
 
     pub async fn add_bytes_received(&self, bytes: u64) {
-        let mut bt = self.bytes_received.lock().await;
-        *bt += bytes;
+        self.bytes_received.fetch_add(bytes, Ordering::Relaxed);
     }
 
     pub async fn total_requests(&self) -> u64 {
-        *self.total_requests.lock().await
+        self.total_requests.load(Ordering::Relaxed)
     }
 
     pub async fn successful_requests(&self) -> u64 {
-        *self.successful_requests.lock().await
+        self.successful_requests.load(Ordering::Relaxed)
     }
 
     pub async fn failed_requests(&self) -> u64 {
-        *self.failed_requests.lock().await
+        self.failed_requests.load(Ordering::Relaxed)
     }
 
     pub async fn bytes_sent(&self) -> u64 {
-        *self.bytes_sent.lock().await
+        self.bytes_sent.load(Ordering::Relaxed)
     }
 
     pub async fn bytes_received(&self) -> u64 {
-        *self.bytes_received.lock().await
+        self.bytes_received.load(Ordering::Relaxed)
     }
 
     pub async fn rps(&self, start_time: std::time::Instant) -> f64 {
@@ -77,13 +75,13 @@ impl Metrics {
 
     pub async fn throughput_sent(&self, start_time: std::time::Instant) -> f64 {
         let elapsed = start_time.elapsed().as_secs_f64();
-        let total_bytes = *self.bytes_sent.lock().await;
+        let total_bytes = self.bytes_sent.load(Ordering::Relaxed);
         total_bytes as f64 / elapsed
     }
 
     pub async fn throughput_received(&self, start_time: std::time::Instant) -> f64 {
         let elapsed = start_time.elapsed().as_secs_f64();
-        let total_bytes = *self.bytes_received.lock().await;
+        let total_bytes = self.bytes_received.load(Ordering::Relaxed);
         total_bytes as f64 / elapsed
     }
 
