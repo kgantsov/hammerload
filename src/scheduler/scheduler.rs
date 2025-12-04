@@ -71,7 +71,6 @@ impl<'a> Scheduler<'a> {
 
                 while seconds_left > 0 {
                     interval.tick().await;
-                    // Perform some action here
                     bar.inc(1);
                     seconds_left -= 1;
                 }
