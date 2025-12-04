@@ -76,13 +76,23 @@ struct Args {
     )]
     timeout: u64,
 
-    #[arg(long = "no-progress", default_value_t = false)]
+    #[arg(
+        long = "no-progress",
+        default_value_t = false,
+        help = "Disable progress bar"
+    )]
     pub no_progress: bool,
+
+    #[arg(long = "no-logo", default_value_t = false, help = "Disable logo")]
+    pub no_logo: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let logo = r#"
+    let args = Args::parse();
+
+    if !args.no_logo {
+        let logo = r#"
     ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
     ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
     ███████║███████║██╔████╔██║██╔████╔██║█████╗  ██████╔╝██║     ██║   ██║███████║██║  ██║
@@ -90,9 +100,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
     "#;
-    println!("{}", logo);
-
-    let args = Args::parse();
+        println!("{}", logo);
+    }
 
     let metrics = Arc::new(Metrics::new());
 
