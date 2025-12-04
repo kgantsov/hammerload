@@ -136,6 +136,10 @@ impl<'a> Scheduler<'a> {
         rate: Option<u64>,
         timeout: u64,
     ) {
+        let headers_clonned = headers.clone();
+        let body_clonned = body.clone();
+        let form_params_clonned = form_params.clone();
+
         let client = Client::builder()
             .default_headers(headers)
             .timeout(Duration::from_secs(timeout))
@@ -147,15 +151,15 @@ impl<'a> Scheduler<'a> {
             Duration::from_secs_f64(1.0 / per_worker)
         });
 
-        let body_clonned = body.clone();
-        let form_params_clonned = form_params.clone();
-
         let mut request_size: u64 = 0;
         if let Some(b) = body_clonned {
             request_size += b.len() as u64;
         }
         for (key, value) in form_params_clonned {
             request_size += key.len() as u64 + value.len() as u64;
+        }
+        for (key, value) in headers_clonned.iter() {
+            request_size += key.as_str().len() as u64 + value.as_bytes().len() as u64;
         }
 
         loop {
