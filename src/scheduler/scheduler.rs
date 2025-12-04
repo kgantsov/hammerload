@@ -200,25 +200,35 @@ impl<'a> Scheduler<'a> {
     }
 
     async fn print_metrics(&self, start_bench: std::time::Instant) {
+        let total_requests = self.metrics.total_requests().await;
+        let successful_requests = self.metrics.successful_requests().await;
+        let failed_requests = self.metrics.failed_requests().await;
+
+        let success_rate = successful_requests as f64 / total_requests as f64 * 100.0;
+        let fail_rate = failed_requests as f64 / total_requests as f64 * 100.0;
+
         println!(
-            "Requests: {} {:.2}/s",
-            self.metrics.total_requests().await,
+            "Requests:......................{}   {:.2}/s",
+            total_requests,
             self.metrics.rps(start_bench).await
         );
         println!(
-            "Requests succeded: {}",
-            self.metrics.successful_requests().await
+            "Requests succeded:.............{}   {:.2}%",
+            successful_requests, success_rate
         );
-        println!("Requests failed: {}", self.metrics.failed_requests().await);
         println!(
-            "Data sent: {} {}/s",
+            "Requests failed:...............{}   {:.2}%",
+            failed_requests, fail_rate
+        );
+        println!(
+            "Data sent:.....................{}   {}/s",
             self.metrics
                 .human_readable_bytes(self.metrics.bytes_sent().await as f64),
             self.metrics
                 .human_readable_bytes(self.metrics.throughput_sent(start_bench).await)
         );
         println!(
-            "Data received: {} {}/s",
+            "Data received:.................{}   {}/s",
             self.metrics
                 .human_readable_bytes(self.metrics.bytes_received().await as f64),
             self.metrics
@@ -226,41 +236,41 @@ impl<'a> Scheduler<'a> {
         );
         println!("Latencies:");
         println!(
-            "   Min:      {}",
+            "   Min:........................{}",
             self.metrics.format_micros(self.metrics.min_latency().await)
         );
         println!(
-            "   P(50):    {}",
+            "   P(50):......................{}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.50))
         );
         println!(
-            "   P(90):    {}",
+            "   P(90):......................{}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.90))
         );
         println!(
-            "   P(95):    {}",
+            "   P(95):......................{}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.95))
         );
         println!(
-            "   P(99):    {}",
+            "   P(99):......................{}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.99))
         );
         println!(
-            "   P(99.9):  {}",
+            "   P(99.9):....................{}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.999))
         );
         println!(
-            "   P(99.99): {}",
+            "   P(99.99):...................{}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.9999))
         );
         println!(
-            "   Max:      {}",
+            "   Max:........................{}",
             self.metrics.format_micros(self.metrics.max_latency().await)
         );
     }
