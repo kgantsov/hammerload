@@ -85,9 +85,20 @@ impl<'a> Scheduler<'a> {
             task.await.unwrap();
         }
 
+        println!("Requests: {:.2}/s", self.metrics.rps(start_bench).await);
         println!(
-            "Requests per second: {}",
-            self.metrics.rps(start_bench).await
+            "Data sent: {} {}/s",
+            self.metrics
+                .human_readable_bytes(self.metrics.bytes_sent().await as f64),
+            self.metrics
+                .human_readable_bytes(self.metrics.throughput_sent(start_bench).await)
+        );
+        println!(
+            "Data received: {} {}/s",
+            self.metrics
+                .human_readable_bytes(self.metrics.bytes_received().await as f64),
+            self.metrics
+                .human_readable_bytes(self.metrics.throughput_received(start_bench).await)
         );
         println!(
             "Successful requests: {}",
@@ -164,8 +175,16 @@ impl<'a> Scheduler<'a> {
         url: &str,
         body: &Option<String>,
         form_params: &HashMap<String, String>,
-    ) -> Result<String, reqwest::Error> {
+    ) -> Result<(), reqwest::Error> {
         let start = std::time::Instant::now();
+
+        let mut request_size: u64 = 0;
+        if let Some(b) = body {
+            request_size += b.len() as u64;
+        }
+        for (key, value) in form_params {
+            request_size += key.len() as u64 + value.len() as u64;
+        }
 
         let req_builder = client.request(method.clone(), url);
         let req_builder = if form_params.len() > 0 {
@@ -180,7 +199,11 @@ impl<'a> Scheduler<'a> {
 
         let resp = req_builder.send().await?;
         let _status = resp.status();
-        let body = resp.text().await?;
+        let body = resp.bytes().await?;
+
+        let response_size = body.len() as u64;
+        metrics.add_bytes_sent(request_size).await;
+        metrics.add_bytes_received(response_size).await;
 
         let req_duration = start.elapsed();
 
@@ -188,10 +211,10 @@ impl<'a> Scheduler<'a> {
             .record_latency(req_duration.as_micros().try_into().unwrap_or(0))
             .await;
 
-        Ok(body)
+        Ok(())
     }
 
-    async fn handle_request_result(metrics: &Arc<Metrics>, result: Result<String, reqwest::Error>) {
+    async fn handle_request_result(metrics: &Arc<Metrics>, result: Result<(), reqwest::Error>) {
         match result {
             Ok(_body) => {
                 metrics.increment_successful_requests().await;

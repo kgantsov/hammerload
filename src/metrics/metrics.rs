@@ -4,6 +4,8 @@ use tokio::sync::Mutex;
 
 pub struct Metrics {
     hist: Arc<Mutex<Histogram<u64>>>,
+    bytes_sent: Arc<Mutex<u64>>,
+    bytes_received: Arc<Mutex<u64>>,
     total_requests: Arc<Mutex<u64>>,
     successful_requests: Arc<Mutex<u64>>,
     failed_requests: Arc<Mutex<u64>>,
@@ -14,6 +16,8 @@ impl Metrics {
         let hist = Histogram::<u64>::new(3).unwrap();
         Self {
             hist: Arc::new(Mutex::new(hist)),
+            bytes_sent: Arc::new(Mutex::new(0)),
+            bytes_received: Arc::new(Mutex::new(0)),
             total_requests: Arc::new(Mutex::new(0)),
             successful_requests: Arc::new(Mutex::new(0)),
             failed_requests: Arc::new(Mutex::new(0)),
@@ -35,6 +39,16 @@ impl Metrics {
         *fr += 1;
     }
 
+    pub async fn add_bytes_sent(&self, bytes: u64) {
+        let mut bt = self.bytes_sent.lock().await;
+        *bt += bytes;
+    }
+
+    pub async fn add_bytes_received(&self, bytes: u64) {
+        let mut bt = self.bytes_received.lock().await;
+        *bt += bytes;
+    }
+
     pub async fn total_requests(&self) -> u64 {
         *self.total_requests.lock().await
     }
@@ -47,10 +61,30 @@ impl Metrics {
         *self.failed_requests.lock().await
     }
 
+    pub async fn bytes_sent(&self) -> u64 {
+        *self.bytes_sent.lock().await
+    }
+
+    pub async fn bytes_received(&self) -> u64 {
+        *self.bytes_received.lock().await
+    }
+
     pub async fn rps(&self, start_time: std::time::Instant) -> f64 {
         let total = self.total_requests().await;
         let elapsed = std::time::Instant::now().duration_since(start_time);
         total as f64 / elapsed.as_millis() as f64 * 1000.0
+    }
+
+    pub async fn throughput_sent(&self, start_time: std::time::Instant) -> f64 {
+        let elapsed = start_time.elapsed().as_secs_f64();
+        let total_bytes = *self.bytes_sent.lock().await;
+        total_bytes as f64 / elapsed
+    }
+
+    pub async fn throughput_received(&self, start_time: std::time::Instant) -> f64 {
+        let elapsed = start_time.elapsed().as_secs_f64();
+        let total_bytes = *self.bytes_received.lock().await;
+        total_bytes as f64 / elapsed
     }
 
     pub async fn record_latency(&self, latency: u64) {
@@ -78,6 +112,23 @@ impl Metrics {
             format!("{}m", us / MICROS_PER_MIN)
         } else {
             format!("{}h", us / MICROS_PER_HOUR)
+        }
+    }
+    pub fn human_readable_bytes(&self, bytes: f64) -> String {
+        const UNITS: [&str; 7] = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+
+        let mut size = bytes as f64;
+        let mut unit = 0;
+
+        while size >= 1024.0 && unit < UNITS.len() - 1 {
+            size /= 1024.0;
+            unit += 1;
+        }
+
+        if unit == 0 {
+            format!("{} {}", bytes, UNITS[unit])
+        } else {
+            format!("{:.2} {}", size, UNITS[unit])
         }
     }
 }
