@@ -13,7 +13,7 @@ enum Protocol {
 #[derive(Parser, Debug)]
 #[command(
     author = "Your Name",
-    version = "0.3.0",
+    version = "0.4.0",
     about = "Hammerload - A load testing tool for HTTP protocols"
 )]
 struct Args {
