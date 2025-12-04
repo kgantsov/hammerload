@@ -116,6 +116,11 @@ impl<'a> Scheduler<'a> {
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.50))
         );
         println!(
+            "   90th percentile: {}",
+            self.metrics
+                .format_micros(self.metrics.histogram().await.value_at_quantile(0.90))
+        );
+        println!(
             "   95th percentile: {}",
             self.metrics
                 .format_micros(self.metrics.histogram().await.value_at_quantile(0.95))
