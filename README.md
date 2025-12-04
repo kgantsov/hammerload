@@ -71,13 +71,18 @@ hammerload http -u http://localhost:8000/files/1 --duration 10 --concurrency 100
     ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
     
-Requests: 335348 33507.99/s
-Requests succeded: 335348
+Requests: 332422 33235.55/s
+Requests succeded: 332422
 Requests failed: 0
 Data sent: 0 B 0 B/s
-Data received: 87.31 MB 8.72 MB/s
+Data received: 86.55 MB 8.65 MB/s
 Latencies:
-   50th percentile: 1ms
-   95th percentile: 9ms
-   99th percentile: 16ms
+   Min:      56µs
+   P(50):    1ms
+   P(90):    6ms
+   P(95):    8ms
+   P(99):    16ms
+   P(99.9):  32ms
+   P(99.99): 53ms
+   Max:      92ms
 ```
