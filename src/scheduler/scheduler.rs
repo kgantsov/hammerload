@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{header::HeaderMap, Client, Method};
 
 use crate::metrics::metrics::Metrics;
@@ -58,6 +58,13 @@ impl<'a> Scheduler<'a> {
 
         if self.show_progress {
             let bar = ProgressBar::new(duration);
+            bar.set_style(
+                ProgressStyle::with_template(
+                    "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
+                )
+                .unwrap()
+                .progress_chars("##-"),
+            );
 
             println!("Hammering ({}s)", duration);
             tasks.push(tokio::spawn(async move {
