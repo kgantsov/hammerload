@@ -67,7 +67,6 @@ struct Args {
     )]
     rate: Option<u64>,
 
-    // timeout
     #[arg(
         short,
         long,
@@ -76,6 +75,9 @@ struct Args {
         help = "Request timeout in seconds"
     )]
     timeout: u64,
+
+    #[arg(long = "no-progress", default_value_t = false)]
+    pub no_progress: bool,
 }
 
 #[tokio::main]
@@ -136,6 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         args.duration,
         args.rate,
         args.timeout,
+        !args.no_progress,
     );
 
     scheduler.run().await;

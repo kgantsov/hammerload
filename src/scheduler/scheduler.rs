@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+use indicatif::ProgressBar;
 use reqwest::{header::HeaderMap, Client, Method};
 
 use crate::metrics::metrics::Metrics;
@@ -15,6 +16,7 @@ pub struct Scheduler<'a> {
     duration: u64,
     rate: Option<u64>,
     timeout: u64,
+    show_progress: bool,
 }
 
 impl<'a> Scheduler<'a> {
@@ -29,6 +31,7 @@ impl<'a> Scheduler<'a> {
         duration: u64,
         rate: Option<u64>,
         timeout: u64,
+        show_progress: bool,
     ) -> Self {
         Scheduler {
             metrics,
@@ -41,6 +44,7 @@ impl<'a> Scheduler<'a> {
             duration,
             rate,
             timeout,
+            show_progress,
         }
     }
 
@@ -50,6 +54,25 @@ impl<'a> Scheduler<'a> {
 
         let url = self.url.clone();
         let headers = self.headers.clone();
+        let duration = self.duration;
+
+        if self.show_progress {
+            let bar = ProgressBar::new(duration);
+
+            println!("Hammering ({}s)", duration);
+            tasks.push(tokio::spawn(async move {
+                let mut seconds_left = duration;
+                let mut interval = tokio::time::interval(Duration::from_secs(1));
+
+                while seconds_left > 0 {
+                    interval.tick().await;
+                    // Perform some action here
+                    bar.inc(1);
+                    seconds_left -= 1;
+                }
+                bar.finish();
+            }));
+        }
 
         for _ in 0..self.concurrency {
             let method = self.method.clone();
@@ -207,6 +230,7 @@ impl<'a> Scheduler<'a> {
         let success_rate = successful_requests as f64 / total_requests as f64 * 100.0;
         let fail_rate = failed_requests as f64 / total_requests as f64 * 100.0;
 
+        println!("");
         println!(
             "Requests:......................{:<10} {:>10.2}/s",
             total_requests,
