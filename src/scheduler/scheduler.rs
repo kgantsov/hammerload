@@ -1,9 +1,12 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use indicatif::{ProgressBar, ProgressStyle};
-use reqwest::{header::HeaderMap, Client, Method};
+use reqwest::{header::HeaderMap, Method};
 
-use crate::metrics::metrics::Metrics;
+use crate::{
+    metrics::metrics::Metrics,
+    requester::{error::RequestError, http_requester::HttpRequester, Requester},
+};
 
 pub struct Scheduler<'a> {
     metrics: &'a Arc<Metrics>,
@@ -91,18 +94,16 @@ impl<'a> Scheduler<'a> {
             let metrics = Arc::clone(self.metrics);
 
             tasks.push(tokio::spawn(async move {
+                let requester =
+                    HttpRequester::new(&metrics, method, url, body, form_params, headers, timeout);
+
                 Scheduler::run_client(
                     &metrics,
                     start_bench,
-                    method,
-                    url,
-                    body,
-                    form_params,
-                    headers,
+                    requester,
                     concurrency,
                     duration,
                     rate,
-                    timeout,
                 )
                 .await;
             }));
@@ -112,56 +113,30 @@ impl<'a> Scheduler<'a> {
             task.await.unwrap();
         }
 
-        self.print_metrics(start_bench).await;
+        self.print_report(start_bench).await;
     }
 
-    async fn run_client(
-        metrics: &'a Arc<Metrics>,
+    async fn run_client<R>(
+        metrics: &Arc<Metrics>,
         start_bench: std::time::Instant,
-        method: Method,
-        url: String,
-        body: Option<String>,
-        form_params: HashMap<String, String>,
-        headers: HeaderMap,
+        requester: R,
         concurrency: u64,
         duration: u64,
         rate: Option<u64>,
-        timeout: u64,
-    ) {
-        let headers_clonned = headers.clone();
-        let body_clonned = body.clone();
-        let form_params_clonned = form_params.clone();
-
-        let client = Client::builder()
-            .default_headers(headers)
-            .timeout(Duration::from_secs(timeout))
-            .build()
-            .unwrap();
-
+    ) where
+        R: Requester + Send,
+    {
         let interval = rate.map(|rps| {
             let per_worker = (rps as f64) / (concurrency as f64);
             Duration::from_secs_f64(1.0 / per_worker)
         });
 
-        let mut request_size: u64 = 0;
-        if let Some(b) = body_clonned {
-            request_size += b.len() as u64;
-        }
-        for (key, value) in form_params_clonned {
-            request_size += key.len() as u64 + value.len() as u64;
-        }
-        for (key, value) in headers_clonned.iter() {
-            request_size += key.as_str().len() as u64 + value.as_bytes().len() as u64;
-        }
-
         loop {
             let loop_start = std::time::Instant::now();
 
-            let result =
-                Self::make_request(metrics, &client, &method, &url, &body, &form_params).await;
-            Self::handle_request_result(metrics, result).await;
+            let result = requester.request().await;
 
-            metrics.add_bytes_sent(request_size).await;
+            Self::handle_request_result(metrics, result).await;
 
             if std::time::Instant::now() >= start_bench + std::time::Duration::from_secs(duration) {
                 break;
@@ -177,44 +152,7 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    async fn make_request(
-        metrics: &Arc<Metrics>,
-        client: &Client,
-        method: &Method,
-        url: &str,
-        body: &Option<String>,
-        form_params: &HashMap<String, String>,
-    ) -> Result<(), reqwest::Error> {
-        let start = std::time::Instant::now();
-
-        let req_builder = client.request(method.clone(), url);
-        let req_builder = if form_params.len() > 0 {
-            req_builder.form(form_params)
-        } else {
-            req_builder
-        };
-        let req_builder = match body {
-            Some(b) => req_builder.body(b.clone()),
-            None => req_builder,
-        };
-
-        let resp = req_builder.send().await?;
-        let _status = resp.status();
-        let body = resp.bytes().await?;
-
-        let response_size = body.len() as u64;
-        metrics.add_bytes_received(response_size).await;
-
-        let req_duration = start.elapsed();
-
-        metrics
-            .record_latency(req_duration.as_micros().try_into().unwrap_or(0))
-            .await;
-
-        Ok(())
-    }
-
-    async fn handle_request_result(metrics: &Arc<Metrics>, result: Result<(), reqwest::Error>) {
+    async fn handle_request_result(metrics: &Arc<Metrics>, result: Result<(), RequestError>) {
         match result {
             Ok(_body) => {
                 metrics.increment_successful_requests().await;
@@ -226,7 +164,7 @@ impl<'a> Scheduler<'a> {
         };
     }
 
-    async fn print_metrics(&self, start_bench: std::time::Instant) {
+    async fn print_report(&self, start_bench: std::time::Instant) {
         let total_requests = self.metrics.total_requests().await;
         let successful_requests = self.metrics.successful_requests().await;
         let failed_requests = self.metrics.failed_requests().await;
