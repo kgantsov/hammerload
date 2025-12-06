@@ -1,97 +1,18 @@
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use clap::{Parser, ValueEnum};
-use hammerload::{metrics::metrics::Metrics, scheduler::scheduler::Scheduler};
-use reqwest::Method;
-
-#[derive(ValueEnum, Debug, Clone)]
-enum Protocol {
-    Http,
-}
-
-#[derive(Parser, Debug)]
-#[command(
-    author = "Kostiantyn Hantsov",
-    version = "0.6.0",
-    about = "Hammerload - A load testing tool for HTTP protocols"
-)]
-struct Args {
-    #[arg(value_name = "PROTOCOL")]
-    protocol: Protocol,
-
-    #[arg(
-        short = 'X',
-        long,
-        value_name = "METHOD",
-        default_value = "GET",
-        help = "HTTP method (GET, POST, PUT, PATCH, DELETE, ...)"
-    )]
-    method: Method,
-
-    #[arg(short, long, value_name = "URL", help = "URL to send requests to")]
-    url: String,
-
-    #[arg(short, long, value_name = "BODY", help = "Request body")]
-    body: Option<String>,
-
-    #[arg(short = 'H', long = "header", help = "Request header (repeatable)")]
-    headers: Vec<String>,
-
-    #[arg(short = 'F', long = "form", help = "Form parameters (repeatable)")]
-    form_params: Vec<String>,
-
-    #[arg(
-        short,
-        long,
-        value_name = "CONCURRENCY",
-        default_value_t = 1,
-        help = "Number of concurrent connections"
-    )]
-    concurrency: u64,
-
-    #[arg(
-        short,
-        long,
-        value_name = "DURATION",
-        default_value_t = 10,
-        help = "Duration of test in seconds"
-    )]
-    duration: u64,
-
-    #[arg(
-        short,
-        long,
-        value_name = "RATE",
-        help = "Number of requests per second"
-    )]
-    rate: Option<u64>,
-
-    #[arg(
-        short,
-        long,
-        value_name = "TIMEOUT",
-        default_value_t = 5,
-        help = "Request timeout in seconds"
-    )]
-    timeout: u64,
-
-    #[arg(
-        long = "no-progress",
-        default_value_t = false,
-        help = "Disable progress bar"
-    )]
-    pub no_progress: bool,
-
-    #[arg(long = "no-logo", default_value_t = false, help = "Disable logo")]
-    pub no_logo: bool,
-}
+use clap::Parser;
+use hammerload::{
+    commands::{Cli, Command},
+    metrics::metrics::Metrics,
+    requester::params::RequestParams,
+    scheduler::scheduler::Scheduler,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let args = Args::parse();
+    let cli = Cli::parse();
 
-    if !args.no_logo {
+    if !cli.no_logo {
         let logo = r#"
     ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
     ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
@@ -105,52 +26,83 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let metrics = Arc::new(Metrics::new());
 
-    let mut form_params = HashMap::new();
-    let mut header_map = reqwest::header::HeaderMap::new();
+    println!("Starting HammerLoad... {}", cli.concurrency);
 
-    for h in &args.headers {
-        match h.split_once(':') {
-            Some((key, value)) => {
-                if let (Ok(header_name), Ok(header_value)) = (
-                    reqwest::header::HeaderName::from_bytes(key.trim().as_bytes()),
-                    reqwest::header::HeaderValue::from_str(value.trim()),
-                ) {
-                    header_map.insert(header_name, header_value);
-                } else {
-                    eprintln!("Invalid header: {}", h);
-                }
-            }
-            None => {
-                eprintln!("Invalid header: {}", h);
-            }
-        }
-    }
-    for h in &args.form_params {
-        match h.split_once('=') {
-            Some((key, value)) => {
-                form_params.insert(key.trim().to_string(), value.trim().to_string());
-            }
-            None => {
-                eprintln!("Invalid form parameter: {}", h);
-            }
-        }
-    }
+    let request_params = parse_request_params(cli.command);
 
     let scheduler = Scheduler::new(
         &metrics,
-        args.method,
-        args.url,
-        args.body,
-        form_params,
-        header_map,
-        args.concurrency,
-        args.duration,
-        args.rate,
-        args.timeout,
-        !args.no_progress,
+        cli.concurrency,
+        cli.duration,
+        cli.rate,
+        cli.timeout,
+        !cli.no_progress,
+        request_params,
     );
 
     scheduler.run().await;
 
     Ok(())
+}
+
+fn parse_request_params(command: Command) -> RequestParams {
+    match command {
+        Command::Http {
+            url,
+            method,
+            body,
+            headers,
+            form,
+        } => {
+            let mut form_params = HashMap::new();
+            let mut header_map = reqwest::header::HeaderMap::new();
+
+            for h in &headers {
+                match h.split_once(':') {
+                    Some((key, value)) => {
+                        if let (Ok(header_name), Ok(header_value)) = (
+                            reqwest::header::HeaderName::from_bytes(key.trim().as_bytes()),
+                            reqwest::header::HeaderValue::from_str(value.trim()),
+                        ) {
+                            header_map.insert(header_name, header_value);
+                        } else {
+                            eprintln!("Invalid header: {}", h);
+                        }
+                    }
+                    None => {
+                        eprintln!("Invalid header: {}", h);
+                    }
+                }
+            }
+            for h in &form {
+                match h.split_once('=') {
+                    Some((key, value)) => {
+                        form_params.insert(key.trim().to_string(), value.trim().to_string());
+                    }
+                    None => {
+                        eprintln!("Invalid form parameter: {}", h);
+                    }
+                }
+            }
+
+            RequestParams::Http(hammerload::requester::params::HttpParams {
+                url,
+                method,
+                body,
+                headers: header_map,
+                form: form_params,
+            })
+        }
+        Command::Grpc {
+            proto,
+            url,
+            method,
+            data,
+        } => RequestParams::Grpc(hammerload::requester::params::GrpcParams {
+            proto,
+            url,
+            method,
+            data,
+        }),
+    }
 }

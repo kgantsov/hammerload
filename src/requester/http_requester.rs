@@ -57,6 +57,10 @@ impl<'a> HttpRequester<'a> {
 }
 
 impl<'a> Requester for HttpRequester<'a> {
+    async fn initialize(&self) -> Result<(), RequestError> {
+        Ok(())
+    }
+
     async fn request(&self) -> Result<(), RequestError> {
         let start = std::time::Instant::now();
 

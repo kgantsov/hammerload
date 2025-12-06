@@ -1,53 +1,43 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use indicatif::{ProgressBar, ProgressStyle};
-use reqwest::{header::HeaderMap, Method};
 
 use crate::{
     metrics::metrics::Metrics,
-    requester::{error::RequestError, http_requester::HttpRequester, Requester},
+    requester::{
+        error::RequestError, grpc_requester::GrpcRequester, http_requester::HttpRequester,
+        params::RequestParams, Requester,
+    },
 };
 
 pub struct Scheduler<'a> {
     metrics: &'a Arc<Metrics>,
-    method: Method,
-    url: String,
-    body: Option<String>,
-    form_params: HashMap<String, String>,
-    headers: HeaderMap,
     concurrency: u64,
     duration: u64,
     rate: Option<u64>,
     timeout: u64,
     show_progress: bool,
+    request_params: RequestParams,
 }
 
 impl<'a> Scheduler<'a> {
     pub fn new(
         metrics: &'a Arc<Metrics>,
-        method: Method,
-        url: String,
-        body: Option<String>,
-        form_params: HashMap<String, String>,
-        headers: HeaderMap,
         concurrency: u64,
         duration: u64,
         rate: Option<u64>,
         timeout: u64,
         show_progress: bool,
+        request_params: RequestParams,
     ) -> Self {
         Scheduler {
             metrics,
-            method,
-            url,
-            body,
-            form_params,
-            headers,
             concurrency,
             duration,
             rate,
             timeout,
             show_progress,
+            request_params,
         }
     }
 
@@ -55,8 +45,6 @@ impl<'a> Scheduler<'a> {
         let start_bench = std::time::Instant::now();
         let mut tasks = Vec::new();
 
-        let url = self.url.clone();
-        let headers = self.headers.clone();
         let duration = self.duration;
 
         if self.show_progress {
@@ -68,44 +56,80 @@ impl<'a> Scheduler<'a> {
                     .progress_chars("##-"),
             );
 
-            tasks.push(tokio::spawn(async move {
-                let mut seconds_left = duration;
-                let mut interval = tokio::time::interval(Duration::from_secs(1));
+            tasks.push(tokio::spawn({
+                let bar = bar.clone();
+                async move {
+                    let mut seconds_left = duration;
+                    let mut interval = tokio::time::interval(Duration::from_secs(1));
 
-                while seconds_left > 0 {
-                    interval.tick().await;
-                    bar.inc(1);
-                    seconds_left -= 1;
+                    while seconds_left > 0 {
+                        interval.tick().await;
+                        bar.inc(1);
+                        seconds_left -= 1;
+                    }
+                    bar.finish();
                 }
-                bar.finish();
             }));
         }
 
         for _ in 0..self.concurrency {
-            let method = self.method.clone();
-            let url = url.clone();
-            let body = self.body.clone();
-            let form_params = self.form_params.clone();
-            let headers = headers.clone();
             let concurrency = self.concurrency;
             let duration = self.duration;
             let rate = self.rate;
             let timeout = self.timeout;
             let metrics = Arc::clone(self.metrics);
 
-            tasks.push(tokio::spawn(async move {
-                let requester =
-                    HttpRequester::new(&metrics, method, url, body, form_params, headers, timeout);
+            // Clone the command for each task to avoid moving out of self
+            let request_params = self.request_params.clone();
 
-                Scheduler::run_client(
-                    &metrics,
-                    start_bench,
-                    requester,
-                    concurrency,
-                    duration,
-                    rate,
-                )
-                .await;
+            tasks.push(tokio::spawn(async move {
+                match request_params {
+                    RequestParams::Http(params) => {
+                        let requester = HttpRequester::new(
+                            &metrics,
+                            params.method,
+                            params.url,
+                            params.body,
+                            params.form,
+                            params.headers,
+                            timeout,
+                        );
+
+                        let _ = requester.initialize().await;
+
+                        Scheduler::run_client(
+                            &metrics,
+                            start_bench,
+                            requester,
+                            concurrency,
+                            duration,
+                            rate,
+                        )
+                        .await;
+                    }
+                    RequestParams::Grpc(params) => {
+                        let requester = GrpcRequester::new(
+                            &metrics,
+                            params.proto,
+                            params.url,
+                            params.method,
+                            params.data,
+                            timeout,
+                        );
+
+                        let _ = requester.initialize().await;
+
+                        Scheduler::run_client(
+                            &metrics,
+                            start_bench,
+                            requester,
+                            concurrency,
+                            duration,
+                            rate,
+                        )
+                        .await;
+                    }
+                };
             }));
         }
 
@@ -158,7 +182,8 @@ impl<'a> Scheduler<'a> {
                 metrics.increment_successful_requests().await;
                 metrics.increment_total_requests().await;
             }
-            Err(_) => {
+            Err(err) => {
+                println!("Request failed {:?}", err);
                 metrics.increment_failed_requests().await;
             }
         };
