@@ -168,7 +168,7 @@ impl<'a> Requester for GrpcRequester<'a> {
             RequestError::ConnectionError(format!("Client not ready (in request): {}", e))
         })?;
 
-        client
+        let response = client
             .unary(request, path_and_query, codec.clone())
             .await
             .map_err(|e| {
@@ -177,6 +177,17 @@ impl<'a> Requester for GrpcRequester<'a> {
             })?;
 
         let req_duration = start.elapsed();
+
+        // calculate request size
+        let encoded = req_msg.encode_to_vec();
+        let request_size = encoded.len();
+
+        // calculate response size
+        let encoded_resp = response.get_ref().encode_to_vec();
+        let response_size = encoded_resp.len();
+
+        self.metrics.add_bytes_received(response_size as u64).await;
+        self.metrics.add_bytes_sent(request_size as u64).await;
 
         self.metrics
             .record_latency(req_duration.as_micros().try_into().unwrap_or(0))
