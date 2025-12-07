@@ -110,8 +110,8 @@ impl<'a> Scheduler<'a> {
                     RequestParams::Grpc(params) => {
                         let requester = GrpcRequester::new(
                             &metrics,
+                            params.address,
                             params.proto,
-                            params.url,
                             params.method,
                             params.data,
                             timeout,

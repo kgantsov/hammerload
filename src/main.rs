@@ -26,8 +26,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let metrics = Arc::new(Metrics::new());
 
-    println!("Starting HammerLoad... {}", cli.concurrency);
-
     let request_params = parse_request_params(cli.command);
 
     let scheduler = Scheduler::new(
@@ -94,13 +92,13 @@ fn parse_request_params(command: Command) -> RequestParams {
             })
         }
         Command::Grpc {
+            address,
             proto,
-            url,
             method,
             data,
         } => RequestParams::Grpc(hammerload::requester::params::GrpcParams {
+            address,
             proto,
-            url,
             method,
             data,
         }),

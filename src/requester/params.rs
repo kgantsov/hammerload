@@ -27,8 +27,8 @@ pub struct HttpParams {
 
 #[derive(Debug, Clone)]
 pub struct GrpcParams {
+    pub address: String,
     pub proto: String,
-    pub url: String,
     pub method: String,
     pub data: Option<String>,
 }

@@ -20,8 +20,8 @@ use tonic::Status;
 
 pub struct GrpcRequester<'a> {
     metrics: &'a Arc<Metrics>,
+    address: String,
     proto: String,
-    url: String,
     method: String,
     data: Option<String>,
     timeout: u64,
@@ -36,16 +36,16 @@ pub struct GrpcRequester<'a> {
 impl<'a> GrpcRequester<'a> {
     pub fn new(
         metrics: &'a Arc<Metrics>,
+        address: String,
         proto: String,
-        url: String,
         method: String,
         data: Option<String>,
         timeout: u64,
     ) -> Self {
         Self {
             metrics,
+            address,
             proto,
-            url,
             method,
             data,
             timeout,
@@ -64,8 +64,9 @@ impl<'a> Requester for GrpcRequester<'a> {
             return Ok(());
         }
 
-        let pool = load_proto(&self.proto)
-            .map_err(|e| RequestError::ConfigError(format!("Failed to load proto: {}", e)))?;
+        let pool = load_proto(&self.proto).map_err(|e| {
+            RequestError::ConfigError(format!("Failed to load proto '{}': {}", self.proto, e))
+        })?;
 
         let method = get_method(&pool, &self.method)
             .map_err(|e| RequestError::ConfigError(format!("Failed to get method: {}", e)))?;
@@ -78,7 +79,7 @@ impl<'a> Requester for GrpcRequester<'a> {
             DynamicMessage::new(method.input())
         };
 
-        let endpoint = tonic::transport::Endpoint::from_shared(self.url.to_string())
+        let endpoint = tonic::transport::Endpoint::from_shared(self.address.to_string())
             .map_err(|e| RequestError::ConnectionError(format!("Invalid URI: {}", e)))?;
 
         let channel = endpoint

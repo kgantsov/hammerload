@@ -85,12 +85,16 @@ pub enum Command {
 
     /// gRPC load testing
     Grpc {
-        /// Path to the proto file
+        #[arg(
+            short,
+            long,
+            value_name = "ADDRESS",
+            help = "Address to send requests to"
+        )]
+        address: String,
+
         #[arg(long, value_name = "PROTO", help = "Path to the proto file")]
         proto: String,
-
-        #[arg(short, long, value_name = "URL", help = "URL to send requests to")]
-        url: String,
 
         #[arg(
             short = 'X',
