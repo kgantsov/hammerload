@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use crate::requester::error::RequestError;
+use http::StatusCode;
 use reqwest::{header::HeaderMap, Client, Method};
 
 use crate::metrics::metrics::Metrics;
@@ -82,7 +83,23 @@ impl<'a> Requester for HttpRequester<'a> {
                 RequestError::Network
             }
         })?;
-        let _status = resp.status();
+        let status = resp.status();
+
+        self.metrics.add_bytes_sent(self.request_size).await;
+
+        if status >= StatusCode::BAD_REQUEST {
+            let req_duration = start.elapsed();
+
+            self.metrics
+                .record_latency(req_duration.as_micros().try_into().unwrap_or(0))
+                .await;
+
+            return Err(RequestError::ServerError(format!(
+                "Service returned {} status code",
+                status
+            )));
+        }
+
         let body = resp.bytes().await.map_err(|e| {
             if e.is_timeout() {
                 RequestError::Timeout
@@ -93,7 +110,6 @@ impl<'a> Requester for HttpRequester<'a> {
 
         let response_size = body.len() as u64;
         self.metrics.add_bytes_received(response_size).await;
-        self.metrics.add_bytes_sent(self.request_size).await;
 
         let req_duration = start.elapsed();
 

@@ -7,5 +7,6 @@ pub enum RequestError {
     RequestFailed(String),
     ConnectionError(String),
     InternalError(String),
+    ServerError(String),
     GrpcError(String),
 }
