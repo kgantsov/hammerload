@@ -1,8 +1,8 @@
-# Hammerload - HTTP benchmarking tool
-### A fast, minimal, Rust-powered HTTP benchmarking tool.
+# Hammerload - Load testing tool
+### A fast, minimal, load testing tool for HTTP and gRPC.
 
 hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP and gRPC services.
-It supports multiple protocols, configurable concurrency, and time-based test duration - making it ideal for quickly profiling APIs, microservices, and web backends.
+It supports configurable concurrency, and time-based test duration - making it ideal for quickly profiling APIs, microservices, and web backends.
 
 ```bash
 hammerload --duration 10 --concurrency 200 http -X POST -u http://localhost:8080/webhooks -H  "Content-Type: application/json" --body '{"name": "Test webhook", "method": "POST"}'
