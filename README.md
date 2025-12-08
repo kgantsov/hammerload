@@ -1,11 +1,11 @@
 # Hammerload - HTTP benchmarking tool
 ### A fast, minimal, Rust-powered HTTP benchmarking tool.
 
-hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP and GRPC services.
-It supports configurable concurrency and time-based test duration—making it ideal for quickly profiling APIs, microservices, and web backends.
+hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP services.
+It supports multiple protocols, configurable concurrency, and time-based test duration - making it ideal for quickly profiling APIs, microservices, and web backends.
 
 ```bash
-hammerload --duration 10 --concurrency 100 http -u http://localhost:8000/files/1
+hammerload --duration 10 --concurrency 200 http -X POST -u http://localhost:8080/webhooks -H  "Content-Type: application/json" --body '{"name": "Test webhook", "method": "POST"}'
 
     ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
     ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
@@ -14,20 +14,21 @@ hammerload --duration 10 --concurrency 100 http -u http://localhost:8000/files/1
     ██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝
     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
     
-Requests:......................333303   33323.64/s
-Requests succeded:.............333303   100.00%
-Requests failed:...............0   0.00%
-Data sent:.....................0 B   0 B/s
-Data received:.................86.78 MB   8.68 MB/s
+
+Requests:......................732056       73183.64/s
+Requests succeded:.............732056          100.00%
+Requests failed:...............0                 0.00%
+Data sent:.....................48.87 MB      4.89 MB/s
+Data received:.................46.78 MB      4.68 MB/s
 Latencies:
-   Min:........................56µs
-   P(50):......................1ms
-   P(90):......................6ms
-   P(95):......................8ms
-   P(99):......................16ms
-   P(99.9):....................34ms
-   P(99.99):...................61ms
-   Max:........................74ms
+   Min:........................61µs
+   P(50):......................2ms
+   P(90):......................4ms
+   P(95):......................5ms
+   P(99):......................7ms
+   P(99.9):....................14ms
+   P(99.99):...................95ms
+   Max:........................125ms
 ```
 
 ## Installation

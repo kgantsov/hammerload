@@ -67,7 +67,7 @@ impl<'a> Scheduler<'a> {
                         bar.inc(1);
                         seconds_left -= 1;
                     }
-                    bar.finish();
+                    bar.finish_and_clear();
                 }
             }));
         }
