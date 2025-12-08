@@ -5,7 +5,7 @@ hammerload is a lightweight, high-performance benchmarking CLI for stress-testin
 It supports configurable concurrency, and time-based test duration - making it ideal for quickly profiling APIs, microservices, and web backends.
 
 ```bash
-hammerload --duration 10 --concurrency 200 http -X POST -u http://localhost:8080/webhooks -H  "Content-Type: application/json" --body '{"name": "Test webhook", "method": "POST"}'
+hammerload --duration 10 --concurrency 200 http -u http://localhost:8080/healthz
 
     ██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗██████╗ ██╗      ██████╗  █████╗ ██████╗
     ██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝██╔══██╗██║     ██╔═══██╗██╔══██╗██╔══██╗
@@ -15,20 +15,20 @@ hammerload --duration 10 --concurrency 200 http -X POST -u http://localhost:8080
     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝
     
 
-Requests:......................732056       73183.64/s
-Requests succeded:.............732056          100.00%
+Requests:......................1036597     103638.97/s
+Requests succeded:.............1036597         100.00%
 Requests failed:...............0                 0.00%
-Data sent:.....................48.87 MB      4.89 MB/s
-Data received:.................46.78 MB      4.68 MB/s
+Data sent:.....................0 B               0 B/s
+Data received:.................1.98 MB     202.42 KB/s
 Latencies:
-   Min:........................61µs
-   P(50):......................2ms
-   P(90):......................4ms
-   P(95):......................5ms
-   P(99):......................7ms
-   P(99.9):....................14ms
-   P(99.99):...................95ms
-   Max:........................125ms
+   Min:........................38µs
+   P(50):......................1ms
+   P(90):......................2ms
+   P(95):......................3ms
+   P(99):......................8ms
+   P(99.9):....................16ms
+   P(99.99):...................28ms
+   Max:........................47ms
 ```
 
 ## Installation
