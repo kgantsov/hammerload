@@ -1,7 +1,7 @@
 # Hammerload - HTTP benchmarking tool
 ### A fast, minimal, Rust-powered HTTP benchmarking tool.
 
-hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP services.
+hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP and gRPC services.
 It supports multiple protocols, configurable concurrency, and time-based test duration - making it ideal for quickly profiling APIs, microservices, and web backends.
 
 ```bash
@@ -97,21 +97,47 @@ hammerload --concurrency 10 --rate 100 http --url http://localhost:8000/files/1
 
 Make HTTP request and pass some headers
 ```bash
-hammerload http -u http://localhost:8000/files/1 -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json"
+hammerload \
+    http \
+    -u http://localhost:8000/files/1 \
+    -H "Authorization: Bearer TOKEN" \
+    -H "Content-Type: application/json"
 ```
 
 Make HTTP POST request with json body
 ```bash
-hammerload --duration 1 --concurrency 1 http -X POST -u http://localhost:8000/files/ -b '{"filename": "test.txt", "directory_path": "", "file_type": "file", "checksum": "checksum", "size": 0}'
+hammerload \
+    --duration 1 \
+    --concurrency 1 \
+    http \
+    -X POST \
+    -u http://localhost:8000/files/ \
+    -b '{"filename": "test.txt", "directory_path": "", "file_type": "file", "checksum": "checksum", "size": 0}'
 ```
 
 Make HTTP POST request with form parameters
 ```bash
-hammerload --duration 1 --concurrency 1 http -X POST -u http://localhost:8000/files/ -F "filename=test.txt" -F "file_type=file" -F "checksum=checksum" -F "size=0"
+hammerload \
+    --duration 1 \
+    --concurrency 1 \
+    http \
+    -X POST \
+    -u http://localhost:8000/files/ \
+    -F "filename=test.txt" \
+    -F "file_type=file" \
+    -F "checksum=checksum" \
+    -F "size=0"
 ```
 
 Make GRPC request
 
 ```bash
-hammerload --duration 10 --concurrency 200 grpc --address http://localhost:10000 --proto ./proto/doq.proto --method "queue.DOQ.Enqueue" --data '{"queueName": "test", "group": "default", "priority": 300, "content": "test message 3"}'
+hammerload \
+    --duration 10 \
+    --concurrency 200 \
+    grpc \
+    --address http://localhost:10000 \
+    --proto ./proto/doq.proto \
+    --method "queue.DOQ.Enqueue" \
+    --data '{"queueName": "test", "group": "default", "priority": 300, "content": "test message 3"}'
 ```
