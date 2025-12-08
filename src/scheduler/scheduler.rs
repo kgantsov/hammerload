@@ -177,10 +177,10 @@ impl<'a> Scheduler<'a> {
     }
 
     async fn handle_request_result(metrics: &Arc<Metrics>, result: Result<(), RequestError>) {
+        metrics.increment_total_requests().await;
         match result {
             Ok(_body) => {
                 metrics.increment_successful_requests().await;
-                metrics.increment_total_requests().await;
             }
             Err(err) => {
                 println!("Request failed {:?}", err);
