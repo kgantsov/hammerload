@@ -1,8 +1,6 @@
-# Hammerload - Load testing tool
-### A fast, minimal, load testing tool for HTTP and gRPC.
+# Hammerload - High-Performance HTTP & gRPC Benchmarking
 
-hammerload is a lightweight, high-performance benchmarking CLI for stress-testing HTTP and gRPC services.
-It supports configurable concurrency, and time-based test duration - making it ideal for quickly profiling APIs, microservices, and web backends.
+A lightweight, blazing-fast command-line interface for load testing HTTP and gRPC services. Hammerload supports configurable concurrency and time-based test duration, making it the perfect tool for profiling the performance and stability of APIs, microservices, and web backends.
 
 ```bash
 hammerload --duration 10 --concurrency 200 http -u http://localhost:8080/healthz
