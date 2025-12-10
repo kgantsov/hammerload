@@ -6,7 +6,7 @@ use crate::{
     metrics::metrics::Metrics,
     requester::{
         error::RequestError, grpc_requester::GrpcRequester, http_requester::HttpRequester,
-        params::RequestParams, Requester,
+        params::RequestParams, websocket_requester::WebsocketRequester, Requester,
     },
 };
 
@@ -116,6 +116,21 @@ impl<'a> Scheduler<'a> {
                             params.data,
                             timeout,
                         );
+
+                        let _ = requester.initialize().await;
+
+                        Scheduler::run_client(
+                            &metrics,
+                            start_bench,
+                            requester,
+                            concurrency,
+                            duration,
+                            rate,
+                        )
+                        .await;
+                    }
+                    RequestParams::Websocket(params) => {
+                        let requester = WebsocketRequester::new(&metrics, params.url, params.data);
 
                         let _ = requester.initialize().await;
 

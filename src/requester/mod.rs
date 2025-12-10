@@ -2,6 +2,7 @@ pub mod error;
 pub mod grpc_requester;
 pub mod http_requester;
 pub mod params;
+pub mod websocket_requester;
 
 use crate::requester::error::RequestError;
 

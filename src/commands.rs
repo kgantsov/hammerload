@@ -107,4 +107,12 @@ pub enum Command {
         #[arg(short, long, value_name = "DATA", help = "Data to send")]
         data: Option<String>,
     },
+    /// Websocket load testing
+    Websocket {
+        #[arg(short, long, value_name = "URL", help = "URL to send requests to")]
+        url: String,
+
+        #[arg(short, long, value_name = "DATA", help = "Data to send")]
+        data: String,
+    },
 }

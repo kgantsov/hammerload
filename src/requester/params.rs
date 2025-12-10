@@ -5,6 +5,7 @@ use reqwest::Method;
 pub enum RequestParams {
     Http(HttpParams),
     Grpc(GrpcParams),
+    Websocket(WebsocketParams),
 }
 
 impl RequestParams {
@@ -12,6 +13,7 @@ impl RequestParams {
         match self {
             RequestParams::Http(params) => RequestParams::Http(params.clone()),
             RequestParams::Grpc(params) => RequestParams::Grpc(params.clone()),
+            RequestParams::Websocket(params) => RequestParams::Websocket(params.clone()),
         }
     }
 }
@@ -31,4 +33,10 @@ pub struct GrpcParams {
     pub proto: String,
     pub method: String,
     pub data: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WebsocketParams {
+    pub url: String,
+    pub data: String,
 }

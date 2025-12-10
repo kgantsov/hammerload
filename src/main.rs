@@ -102,5 +102,8 @@ fn parse_request_params(command: Command) -> RequestParams {
             method,
             data,
         }),
+        Command::Websocket { url, data } => {
+            RequestParams::Websocket(hammerload::requester::params::WebsocketParams { url, data })
+        }
     }
 }

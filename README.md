@@ -1,6 +1,6 @@
-# Hammerload - High-Performance HTTP & gRPC Benchmarking
+# Hammerload - High-Performance HTTP, gRPC and WebSocket Benchmarking
 
-A lightweight, blazing-fast command-line interface for load testing HTTP and gRPC services. Hammerload supports configurable concurrency and time-based test duration, making it the perfect tool for profiling the performance and stability of APIs, microservices, and web backends.
+A lightweight, blazing-fast command-line interface for load testing HTTP, gRPC and WebSocket services. Hammerload supports configurable concurrency and time-based test duration, making it the perfect tool for profiling the performance and stability of APIs, microservices, and web backends.
 
 ```bash
 hammerload --duration 10 --concurrency 200 http -u http://localhost:8080/healthz
@@ -137,5 +137,16 @@ hammerload \
     --address http://localhost:10000 \
     --proto ./proto/doq.proto \
     --method "queue.DOQ.Enqueue" \
+    --data '{"queueName": "test", "group": "default", "priority": 300, "content": "test message 3"}'
+```
+
+Make WebSocket request
+
+```bash
+hammerload \
+    --duration 10 \
+    --concurrency 100 \
+    websocket \
+    --url 'ws://localhost:8000/ws/123' \
     --data '{"queueName": "test", "group": "default", "priority": 300, "content": "test message 3"}'
 ```
